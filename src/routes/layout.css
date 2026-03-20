@@ -1,0 +1,45 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-mustard: #f4a900;
+  --color-mustard-light: #fdc84b;
+  --color-mustard-dim: #b87d00;
+  --color-terracotta: #c1666b;
+  --color-terracotta-light: #d9898d;
+  --color-beige: #d4b896;
+  --color-beige-light: #ede0ce;
+  --color-beige-pale: #f8f2ea;
+  --color-chocolate: #4a403a;
+  --color-chocolate-dark: #2e2520;
+  --color-chocolate-mid: #6b5c54;
+  --color-white: #fffdf9;
+
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body: 'DM Sans', sans-serif;
+
+  --shadow-custom: 0 2px 10px rgba(74, 64, 58, 0.12);
+  --shadow-strong: 0 2px 12px rgba(74, 64, 58, 0.25);
+  --shadow-glass: 0 8px 32px 0 rgba(74, 64, 58, 0.1);
+
+  --animate-gradient-mesh: gradient-mesh 20s ease infinite;
+  
+  @keyframes gradient-mesh {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+}
+
+@layer base {
+  body {
+    background: linear-gradient(-45deg, var(--color-beige-pale), var(--color-beige), #f9eacc, #fefbfc);
+    background-size: 400% 400%;
+    animation: var(--animate-gradient-mesh);
+    color: var(--color-chocolate);
+    font-family: var(--font-body);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+}
