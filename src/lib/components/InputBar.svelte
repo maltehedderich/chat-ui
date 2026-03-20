@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { chatState, clearChat } from '$lib/stores/chat.svelte';
+	import { chatState } from '$lib/stores/chat.svelte';
 	import { sendMessage } from '$lib/api';
 	import SendIcon from '$lib/icons/SendIcon.svelte';
 
@@ -60,14 +60,8 @@
 				<SendIcon />
 			</button>
 		</div>
-		<div class="flex items-center justify-between px-1">
+		<div class="flex items-center justify-center px-1">
 			<span class="text-[11px] text-zinc-500">Enter to send · Shift+Enter for new line</span>
-			<button
-				class="cursor-pointer rounded border-none bg-transparent px-2 py-1 font-sans text-[11px] text-zinc-500 transition-all duration-300 hover:bg-red-400/10 hover:text-red-400 active:scale-95"
-				onclick={clearChat}
-			>
-				Clear chat
-			</button>
 		</div>
 	</div>
 </div>

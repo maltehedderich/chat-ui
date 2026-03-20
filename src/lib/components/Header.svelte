@@ -3,6 +3,8 @@
 	import { uiState } from '$lib/stores/ui.svelte';
 	import ChatIcon from '$lib/icons/ChatIcon.svelte';
 	import SettingsIcon from '$lib/icons/SettingsIcon.svelte';
+	import TrashIcon from '$lib/icons/TrashIcon.svelte';
+	import { clearChat } from '$lib/stores/chat.svelte';
 </script>
 
 <header
@@ -44,11 +46,22 @@
 		</button>
 	</nav>
 
-	<button
-		class="max-w-[180px] cursor-pointer overflow-hidden rounded-full border border-white/10 bg-zinc-800/50 px-3.5 py-1.5 text-[12px] font-medium text-ellipsis whitespace-nowrap text-zinc-300 backdrop-blur-md transition-all duration-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] active:scale-95"
-		title={configState.baseUrl || 'Click to configure'}
-		onclick={() => (uiState.activePage = 'config')}
-	>
-		{configState.modelId || 'No model set'}
-	</button>
+	<div class="flex items-center gap-2">
+		{#if uiState.activePage === 'chat'}
+			<button
+				class="flex h-[30px] w-[30px] cursor-pointer items-center justify-center rounded-full border border-white/10 bg-zinc-800/50 text-[14px] text-zinc-400 backdrop-blur-md transition-all duration-300 hover:border-red-500/50 hover:bg-red-500/10 hover:text-red-400 hover:shadow-[0_0_15px_rgba(244,63,94,0.2)] active:scale-95"
+				onclick={clearChat}
+				title="Clear Chat"
+			>
+				<TrashIcon />
+			</button>
+		{/if}
+		<button
+			class="flex max-w-[180px] h-[30px] cursor-pointer items-center overflow-hidden rounded-full border border-white/10 bg-zinc-800/50 px-3 text-[12px] font-medium text-ellipsis whitespace-nowrap text-zinc-300 backdrop-blur-md transition-all duration-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] active:scale-95"
+			title={configState.baseUrl || 'Click to configure'}
+			onclick={() => (uiState.activePage = 'config')}
+		>
+			{configState.modelId || 'No model set'}
+		</button>
+	</div>
 </header>
