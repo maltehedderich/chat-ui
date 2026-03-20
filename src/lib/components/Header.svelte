@@ -1,39 +1,43 @@
 <script lang="ts">
-	import { config } from '$lib/stores/config';
-	import { activePage } from '$lib/stores/ui';
+	import { configState } from '$lib/stores/config.svelte';
+	import { uiState } from '$lib/stores/ui.svelte';
 	import ChatIcon from '$lib/icons/ChatIcon.svelte';
 	import SettingsIcon from '$lib/icons/SettingsIcon.svelte';
 </script>
 
-<header class="bg-chocolate-dark/85 backdrop-blur-xl border-b border-white/5 px-6 h-[58px] flex items-center justify-between shrink-0 shadow-[0_4px_20px_var(--shadow-glass)] relative z-10 w-full transition-all duration-300">
-	<div class="flex items-center gap-[10px]">
-		<div class="w-[30px] h-[30px] bg-mustard rounded-lg flex items-center justify-center text-base">
+<header
+	class="relative z-10 flex h-[64px] w-full shrink-0 items-center justify-between border-b border-white/5 bg-zinc-950/40 px-6 shadow-lg backdrop-blur-2xl transition-all duration-300"
+>
+	<div class="flex items-center gap-[12px]">
+		<div
+			class="flex h-[32px] w-[32px] items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-[15px] text-white shadow-[0_0_15px_rgba(99,102,241,0.4)]"
+		>
 			✦
 		</div>
-		<span class="font-display text-[20px] text-white tracking-[0.01em]">
-			Golden <span class="text-mustard">Hour</span>
+		<span class="font-sans text-[19px] font-semibold tracking-tight text-zinc-100">
+			Aura <span class="font-medium text-indigo-400">AI</span>
 		</span>
 	</div>
 
-	<nav class="flex gap-1 absolute left-1/2 -translate-x-1/2">
+	<nav
+		class="absolute left-1/2 flex -translate-x-1/2 gap-1 rounded-lg border border-white/5 bg-zinc-900/50 p-1"
+	>
 		<button
-			class="flex items-center gap-1.5 font-body text-[13px] font-medium px-3.5 py-[7px] rounded-md cursor-pointer transition-all duration-300 tracking-[0.02em] active:scale-95 {
-				$activePage === 'chat'
-					? 'bg-mustard/20 text-mustard shadow-inner shadow-mustard/10'
-					: 'text-beige/80 hover:bg-mustard/10 hover:text-mustard-light bg-transparent border-none'
-			}"
-			onclick={() => ($activePage = 'chat')}
+			class="flex cursor-pointer items-center gap-1.5 rounded-md px-4 py-[6px] font-sans text-[13px] font-medium tracking-wide transition-all duration-300 active:scale-95 {uiState.activePage ===
+			'chat'
+				? 'bg-white/10 text-white shadow-inner shadow-white/5'
+				: 'border-none bg-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200'}"
+			onclick={() => (uiState.activePage = 'chat')}
 		>
 			<ChatIcon />
 			Chat
 		</button>
 		<button
-			class="flex items-center gap-1.5 font-body text-[13px] font-medium px-3.5 py-[7px] rounded-md cursor-pointer transition-all duration-300 tracking-[0.02em] active:scale-95 {
-				$activePage === 'config'
-					? 'bg-mustard/20 text-mustard shadow-inner shadow-mustard/10'
-					: 'text-beige/80 hover:bg-mustard/10 hover:text-mustard-light bg-transparent border-none'
-			}"
-			onclick={() => ($activePage = 'config')}
+			class="flex cursor-pointer items-center gap-1.5 rounded-md px-4 py-[6px] font-sans text-[13px] font-medium tracking-wide transition-all duration-300 active:scale-95 {uiState.activePage ===
+			'config'
+				? 'bg-white/10 text-white shadow-inner shadow-white/5'
+				: 'border-none bg-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200'}"
+			onclick={() => (uiState.activePage = 'config')}
 		>
 			<SettingsIcon />
 			Settings
@@ -41,10 +45,10 @@
 	</nav>
 
 	<button
-		class="text-[11px] bg-beige/10 backdrop-blur-sm text-beige px-3 py-1.5 rounded-full border border-beige/15 font-medium cursor-pointer transition-all duration-300 max-w-[180px] overflow-hidden text-ellipsis whitespace-nowrap hover:border-mustard/50 hover:bg-mustard/10 hover:text-mustard-light hover:shadow-[0_0_10px_rgba(244,169,0,0.2)] active:scale-95"
-		title={$config.baseUrl || 'Click to configure'}
-		onclick={() => ($activePage = 'config')}
+		class="max-w-[180px] cursor-pointer overflow-hidden rounded-full border border-white/10 bg-zinc-800/50 px-3.5 py-1.5 text-[12px] font-medium text-ellipsis whitespace-nowrap text-zinc-300 backdrop-blur-md transition-all duration-300 hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-indigo-300 hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] active:scale-95"
+		title={configState.baseUrl || 'Click to configure'}
+		onclick={() => (uiState.activePage = 'config')}
 	>
-		{$config.modelId || 'No model set'}
+		{configState.modelId || 'No model set'}
 	</button>
 </header>
