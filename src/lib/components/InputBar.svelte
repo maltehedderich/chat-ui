@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { chatState } from '$lib/stores/chat.svelte';
-	import { sendMessage } from '$lib/api';
+	import { sendMessage, stopStreaming } from '$lib/api';
 	import SendIcon from '$lib/icons/SendIcon.svelte';
 
 	let inputVal = $state('');
@@ -23,7 +23,7 @@
 		if (chatState.isStreaming || !inputVal.trim()) return;
 		sendMessage(inputVal);
 		inputVal = '';
-		textareaEl.style.height = 'auto';
+		if (textareaEl) textareaEl.style.height = 'auto';
 	};
 </script>
 
@@ -51,14 +51,38 @@
 						: ''}">{charCount}</span
 				>
 			</div>
-			<button
-				class="flex h-[44px] w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[14px] border-none bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_4px_12px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_6px_20px_rgba(99,102,241,0.5)] active:scale-95 disabled:transform-none disabled:cursor-not-allowed disabled:opacity-30 [&>svg]:h-[18px] [&>svg]:w-[18px] [&>svg]:stroke-white"
-				onclick={handleSend}
-				disabled={chatState.isStreaming || !inputVal.trim()}
-				title="Send"
-			>
-				<SendIcon />
-			</button>
+
+			{#if chatState.isStreaming}
+				<button
+					class="flex h-[44px] w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[14px] border-none bg-zinc-800/80 shadow-[0_4px_12px_rgba(0,0,0,0.3)] transition-all duration-300 hover:scale-[1.05] hover:bg-rose-600/90 hover:shadow-[0_6px_20px_rgba(225,29,72,0.4)] active:scale-95"
+					onclick={stopStreaming}
+					title="Stop Generation"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						class="stroke-white"
+					>
+						<rect x="6" y="6" width="12" height="12" rx="1" ry="1" />
+					</svg>
+				</button>
+			{:else}
+				<button
+					class="flex h-[44px] w-[44px] shrink-0 cursor-pointer items-center justify-center rounded-[14px] border-none bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_4px_12px_rgba(99,102,241,0.3)] transition-all duration-300 hover:scale-[1.05] hover:shadow-[0_6px_20px_rgba(99,102,241,0.5)] active:scale-95 disabled:transform-none disabled:cursor-not-allowed disabled:opacity-30 [&>svg]:h-[18px] [&>svg]:w-[18px] [&>svg]:stroke-white"
+					onclick={handleSend}
+					disabled={!inputVal.trim()}
+					title="Send"
+				>
+					<SendIcon />
+				</button>
+			{/if}
 		</div>
 		<div class="flex items-center justify-center px-1">
 			<span class="text-[11px] text-zinc-500">Enter to send · Shift+Enter for new line</span>

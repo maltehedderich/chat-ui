@@ -1,5 +1,11 @@
 import { browser } from '$app/environment';
 
+export interface SystemPrompt {
+	id: string;
+	label: string;
+	content: string;
+}
+
 export interface AppConfig {
 	baseUrl: string;
 	apiKey: string;
@@ -9,6 +15,8 @@ export interface AppConfig {
 	systemPrompt: string;
 	stream: boolean;
 	sendHistory: boolean;
+	systemPromptLibrary: SystemPrompt[];
+	customHeaders: string;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -19,14 +27,38 @@ export const DEFAULT_CONFIG: AppConfig = {
 	maxTokens: 4096,
 	systemPrompt: 'You are a helpful and concise AI assistant.',
 	stream: true,
-	sendHistory: true
+	sendHistory: true,
+	systemPromptLibrary: [
+		{ id: '1', label: 'Default Assistant', content: 'You are a helpful and concise AI assistant.' },
+		{
+			id: '2',
+			label: 'Code Expert',
+			content:
+				'You are an expert software engineer. Provide clean, efficient, and well-documented code solutions.'
+		},
+		{
+			id: '3',
+			label: 'Creative Writer',
+			content: 'You are a creative writer. Help me brainstorm ideas and write engaging stories.'
+		}
+	],
+	customHeaders: '{}'
 };
 
 const getInitialConfig = (): AppConfig => {
 	if (!browser) return { ...DEFAULT_CONFIG };
 	try {
 		const saved = localStorage.getItem('gh_chat_cfg');
-		return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : { ...DEFAULT_CONFIG };
+		if (!saved) return { ...DEFAULT_CONFIG };
+
+		const parsed = JSON.parse(saved);
+		// Migration: ensure new fields exist
+		return {
+			...DEFAULT_CONFIG,
+			...parsed,
+			systemPromptLibrary: parsed.systemPromptLibrary || DEFAULT_CONFIG.systemPromptLibrary,
+			customHeaders: parsed.customHeaders || DEFAULT_CONFIG.customHeaders
+		};
 	} catch {
 		return { ...DEFAULT_CONFIG };
 	}

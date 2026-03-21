@@ -7,15 +7,55 @@
 	let testStatus = $state<'none' | 'checking' | 'ok' | 'error'>('none');
 	let testMsg = $state('');
 	let showKey = $state(false);
+	const headersPlaceholder = '{"X-Custom-Header": "Value"}';
+
+	// Prompt library logic
+	let newPromptLabel = $state('');
+	let newPromptContent = $state('');
+
+	const addPromptToLibrary = () => {
+		if (!newPromptLabel.trim() || !newPromptContent.trim()) return;
+		tempConfig.systemPromptLibrary.push({
+			id: Date.now().toString() + Math.random().toString(36).substring(7),
+			label: newPromptLabel.trim(),
+			content: newPromptContent.trim()
+		});
+		newPromptLabel = '';
+		newPromptContent = '';
+		showToast('Prompt added to library');
+	};
+
+	const removePromptFromLibrary = (id: string) => {
+		tempConfig.systemPromptLibrary = tempConfig.systemPromptLibrary.filter((p) => p.id !== id);
+	};
+
+	const selectPrompt = (content: string) => {
+		tempConfig.systemPrompt = content;
+		showToast('Prompt applied');
+	};
 
 	const saveConfig = () => {
+		// Basic JSON validation for headers
+		try {
+			if (
+				tempConfig.customHeaders &&
+				tempConfig.customHeaders.trim() &&
+				tempConfig.customHeaders !== '{}'
+			) {
+				JSON.parse(tempConfig.customHeaders);
+			}
+		} catch (e) {
+			showToast('⚠ Invalid JSON in Custom Headers', true);
+			return;
+		}
+
 		Object.assign(configState, tempConfig);
 		saveConfigData();
 		showToast('✓ Settings saved');
 	};
 
 	const resetDefaults = () => {
-		tempConfig = { ...DEFAULT_CONFIG };
+		tempConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 		Object.assign(configState, DEFAULT_CONFIG);
 		saveConfigData();
 		showToast('Reset to defaults');
@@ -38,6 +78,18 @@
 			const url = tempConfig.baseUrl.replace(/\/$/, '') + '/models';
 			const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 			if (tempConfig.apiKey) headers['Authorization'] = 'Bearer ' + tempConfig.apiKey;
+
+			// Include custom headers in test if valid
+			if (
+				tempConfig.customHeaders &&
+				tempConfig.customHeaders.trim() &&
+				tempConfig.customHeaders !== '{}'
+			) {
+				try {
+					const custom = JSON.parse(tempConfig.customHeaders);
+					Object.assign(headers, custom);
+				} catch {}
+			}
 
 			const res = await fetch(url, { headers });
 			if (!res.ok) throw new Error('HTTP ' + res.status + ' — ' + (await res.text()).slice(0, 120));
@@ -83,7 +135,7 @@
 			<div class="mb-4">
 				<label
 					for="baseUrl"
-					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 					>Base URL</label
 				>
 				<input
@@ -95,8 +147,7 @@
 				/>
 				<div class="mt-1.5 text-[12px] leading-[1.5] text-zinc-500">
 					The API base URL. For OpenAI use <code
-						class="rounded bg-zinc-800 px-1 font-mono text-[11.5px]"
-						>https://api.openai.com/v1</code
+						class="rounded bg-zinc-800 px-1 font-mono text-[11.5px]">https://api.openai.com/v1</code
 					>. For Ollama use
 					<code class="rounded bg-zinc-800 px-1 font-mono text-[11.5px]"
 						>http://localhost:11434/v1</code
@@ -107,7 +158,7 @@
 			<div class="mb-4">
 				<label
 					for="apiKey"
-					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 					>API Key</label
 				>
 				<div class="relative">
@@ -135,6 +186,24 @@
 				</div>
 			</div>
 
+			<div class="mb-4">
+				<label
+					for="customHeaders"
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
+					>Custom Headers (JSON)</label
+				>
+				<textarea
+					id="customHeaders"
+					bind:value={tempConfig.customHeaders}
+					rows="2"
+					class="font-body w-full rounded-[10px] border border-white/10 bg-zinc-950/50 px-[13px] py-[10px] font-mono text-[13px] text-zinc-100 shadow-inner backdrop-blur-sm transition-all duration-300 outline-none hover:bg-zinc-900 focus:border-indigo-500 focus:bg-zinc-950 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+					placeholder={headersPlaceholder}
+				></textarea>
+				<div class="mt-1.5 text-[12px] leading-[1.5] text-zinc-500">
+					Additional HTTP headers to send with every request. Must be valid JSON.
+				</div>
+			</div>
+
 			<div class="mt-4 flex items-center gap-2.5">
 				<button
 					class="font-body flex cursor-pointer items-center gap-1.5 rounded-lg border border-white/10 bg-transparent px-4 py-2 text-[13px] font-medium text-zinc-300 transition-colors duration-180 hover:border-indigo-500 hover:text-indigo-300"
@@ -154,7 +223,7 @@
 							? 'bg-emerald-500'
 							: testStatus === 'error'
 								? 'bg-rose-500'
-								: 'bg-indigo-500 animate-[pulse_1s_infinite]'}"
+								: 'animate-[pulse_1s_infinite] bg-indigo-500'}"
 					></div>
 					<span class="text-[12.5px] text-zinc-300"
 						>{testStatus === 'checking'
@@ -190,7 +259,7 @@
 			<div class="mb-4">
 				<label
 					for="modelId"
-					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 					>Model ID</label
 				>
 				<input
@@ -209,7 +278,7 @@
 			<div class="mb-4">
 				<label
 					for="presets"
-					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 					>Quick Presets</label
 				>
 				<select
@@ -265,7 +334,7 @@
 				<div>
 					<label
 						for="temperature"
-						class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+						class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 						>Temperature</label
 					>
 					<div class="flex items-center gap-3">
@@ -289,7 +358,7 @@
 				<div>
 					<label
 						for="maxTokens"
-						class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
+						class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
 						>Max Tokens</label
 					>
 					<input
@@ -308,8 +377,8 @@
 			<div class="mb-4">
 				<label
 					for="systemPrompt"
-					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] uppercase text-zinc-400"
-					>System Prompt</label
+					class="mb-1.5 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
+					>Active System Prompt</label
 				>
 				<textarea
 					id="systemPrompt"
@@ -318,13 +387,84 @@
 					class="font-body w-full resize-y rounded-[10px] border border-white/10 bg-zinc-950/50 px-[13px] py-[10px] text-[14px] leading-[1.5] text-zinc-100 shadow-inner backdrop-blur-sm transition-all duration-300 outline-none hover:bg-zinc-900 focus:border-indigo-500 focus:bg-zinc-950 focus:shadow-[0_0_15px_rgba(99,102,241,0.15)]"
 					placeholder="You are a helpful assistant…"
 				></textarea>
-				<div class="mt-1.5 text-[12px] leading-[1.5] text-zinc-500">
-					Instructions that precede every conversation.
+			</div>
+
+			<div class="mb-6">
+				<span class="mb-2 block text-[12px] font-semibold tracking-[0.07em] text-zinc-400 uppercase"
+					>Prompt Library</span
+				>
+				<div class="flex flex-col gap-2">
+					{#each tempConfig.systemPromptLibrary as prompt (prompt.id)}
+						<div
+							class="group flex items-center justify-between rounded-lg border border-white/5 bg-zinc-950/30 p-2.5 transition-all hover:bg-zinc-950/50"
+						>
+							<div class="flex flex-col overflow-hidden">
+								<span class="text-[13px] font-medium text-zinc-200">{prompt.label}</span>
+								<span class="truncate text-[11px] text-zinc-500">{prompt.content}</span>
+							</div>
+							<div
+								class="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100"
+							>
+								<button
+									class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-indigo-500/10 hover:text-indigo-400"
+									onclick={() => selectPrompt(prompt.content)}
+									title="Use this prompt"
+								>
+									<svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+										<path
+											d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+										/>
+									</svg>
+								</button>
+								<button
+									class="cursor-pointer rounded p-1 text-zinc-500 hover:bg-rose-500/10 hover:text-rose-400"
+									onclick={() => removePromptFromLibrary(prompt.id)}
+									title="Delete"
+								>
+									<svg viewBox="0 0 20 20" width="14" height="14" fill="currentColor">
+										<path
+											fill-rule="evenodd"
+											d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+											clip-rule="evenodd"
+										/>
+									</svg>
+								</button>
+							</div>
+						</div>
+					{/each}
+				</div>
+
+				<div class="mt-4 rounded-xl border border-white/5 bg-zinc-950/20 p-4">
+					<span class="mb-3 block text-[11px] font-semibold text-zinc-500 uppercase"
+						>Add New Prompt</span
+					>
+					<div class="flex flex-col gap-3">
+						<input
+							type="text"
+							bind:value={newPromptLabel}
+							placeholder="Label (e.g. Code Expert)"
+							class="w-full rounded-lg border border-white/10 bg-zinc-950/50 px-3 py-2 text-[13px] text-zinc-100 outline-none focus:border-indigo-500"
+						/>
+						<textarea
+							bind:value={newPromptContent}
+							placeholder="Prompt content..."
+							rows="2"
+							class="w-full rounded-lg border border-white/10 bg-zinc-950/50 px-3 py-2 text-[13px] text-zinc-100 outline-none focus:border-indigo-500"
+						></textarea>
+						<button
+							class="self-end rounded-lg bg-indigo-500/10 px-4 py-2 text-[12px] font-medium text-indigo-400 transition-colors hover:bg-indigo-500/20"
+							onclick={addPromptToLibrary}
+						>
+							+ Add to Library
+						</button>
+					</div>
 				</div>
 			</div>
 
 			<div class="mt-1.5">
-				<label class="flex cursor-pointer items-center justify-between border-b border-white/10 py-2.5">
+				<label
+					class="flex cursor-pointer items-center justify-between border-b border-white/10 py-2.5"
+				>
 					<div class="flex-1">
 						<strong class="block text-[13.5px] font-semibold text-zinc-100">Streaming</strong>
 						<span class="text-[12px] text-zinc-400">Stream tokens as they are generated</span>
@@ -332,7 +472,7 @@
 					<div class="relative h-[22px] w-[40px] shrink-0">
 						<input type="checkbox" bind:checked={tempConfig.stream} class="peer sr-only" />
 						<div
-							class="absolute inset-0 rounded-full bg-zinc-700 transition-colors duration-200 after:absolute after:bottom-[3px] after:left-[3px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-[0_1px_4px_rgba(0,0,0,0.2)] after:transition-transform after:duration-200 peer-checked:bg-indigo-500 peer-checked:after:translate-x-[18px]"
+							class="absolute inset-0 rounded-full bg-zinc-700 transition-colors duration-200 peer-checked:bg-indigo-500 after:absolute after:bottom-[3px] after:left-[3px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-[0_1px_4px_rgba(0,0,0,0.2)] after:transition-transform after:duration-200 peer-checked:after:translate-x-[18px]"
 						></div>
 					</div>
 				</label>
@@ -346,7 +486,7 @@
 					<div class="relative h-[22px] w-[40px] shrink-0">
 						<input type="checkbox" bind:checked={tempConfig.sendHistory} class="peer sr-only" />
 						<div
-							class="absolute inset-0 rounded-full bg-zinc-700 transition-colors duration-200 after:absolute after:bottom-[3px] after:left-[3px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-[0_1px_4px_rgba(0,0,0,0.2)] after:transition-transform after:duration-200 peer-checked:bg-indigo-500 peer-checked:after:translate-x-[18px]"
+							class="absolute inset-0 rounded-full bg-zinc-700 transition-colors duration-200 peer-checked:bg-indigo-500 after:absolute after:bottom-[3px] after:left-[3px] after:h-4 after:w-4 after:rounded-full after:bg-white after:shadow-[0_1px_4px_rgba(0,0,0,0.2)] after:transition-transform after:duration-200 peer-checked:after:translate-x-[18px]"
 						></div>
 					</div>
 				</label>

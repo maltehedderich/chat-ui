@@ -1,20 +1,25 @@
-import { chatState, addMessage, type Message } from '$lib/stores/chat.svelte';
+import {
+	chatState,
+	addMessage,
+	saveChatData,
+	deleteFrom,
+	updateMessage,
+	type Message
+} from '$lib/stores/chat.svelte';
 import { configState } from '$lib/stores/config.svelte';
 import { uiState, showToast } from '$lib/stores/ui.svelte';
 
-export const sendMessage = async (text: string) => {
-	if (chatState.isStreaming) return;
-	if (!text.trim()) return;
-
-	if (!configState.baseUrl || !configState.modelId) {
-		showToast('⚠ Configure your API settings first', true);
-		uiState.activePage = 'config';
-		return;
+export const stopStreaming = () => {
+	if (chatState.abortController) {
+		chatState.abortController.abort();
+		chatState.abortController = null;
+		chatState.isStreaming = false;
 	}
+};
 
-	// Add user message
-	addMessage('user', text.trim());
+const triggerGeneration = async () => {
 	chatState.isStreaming = true;
+	chatState.abortController = new AbortController();
 
 	// Prepare payload
 	const payload = {
@@ -24,14 +29,22 @@ export const sendMessage = async (text: string) => {
 		stream: configState.stream,
 		messages: [
 			{ role: 'system', content: configState.systemPrompt },
-			...(configState.sendHistory
-				? chatState.messages.map((m) => ({ role: m.role, content: m.content }))
-				: [{ role: 'user', content: text.trim() }])
+			...chatState.messages.map((m) => ({ role: m.role, content: m.content }))
 		]
 	};
 
 	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
 	if (configState.apiKey) headers['Authorization'] = `Bearer ${configState.apiKey}`;
+
+	// Custom Headers
+	if (configState.customHeaders && configState.customHeaders !== '{}') {
+		try {
+			const custom = JSON.parse(configState.customHeaders);
+			Object.assign(headers, custom);
+		} catch (e) {
+			console.error('Failed to parse custom headers:', e);
+		}
+	}
 
 	// Add empty assistant message for streaming
 	const assistantMsgId = Date.now().toString() + Math.random().toString(36).substring(7);
@@ -45,6 +58,7 @@ export const sendMessage = async (text: string) => {
 	const updateAssistantMessage = (content: string) => {
 		const msg = chatState.messages.find((m) => m.id === assistantMsgId);
 		if (msg) msg.content = content;
+		saveChatData();
 	};
 
 	const setAssistantError = (errorMsg: string) => {
@@ -53,6 +67,7 @@ export const sendMessage = async (text: string) => {
 			msg.content = `**Error:** ${errorMsg}`;
 			msg.isError = true;
 		}
+		saveChatData();
 	};
 
 	let fullText = '';
@@ -61,7 +76,8 @@ export const sendMessage = async (text: string) => {
 		const res = await fetch(`${configState.baseUrl}/chat/completions`, {
 			method: 'POST',
 			headers,
-			body: JSON.stringify(payload)
+			body: JSON.stringify(payload),
+			signal: chatState.abortController.signal
 		});
 
 		if (!res.ok) {
@@ -101,8 +117,39 @@ export const sendMessage = async (text: string) => {
 			updateAssistantMessage(fullText);
 		}
 	} catch (e: any) {
-		setAssistantError(e.message);
+		if (e.name === 'AbortError') {
+			updateAssistantMessage(fullText + '\n\n*(Generation stopped by user)*');
+		} else {
+			setAssistantError(e.message);
+		}
 	} finally {
 		chatState.isStreaming = false;
+		chatState.abortController = null;
 	}
+};
+
+export const sendMessage = async (text: string) => {
+	if (chatState.isStreaming) return;
+	if (!text.trim()) return;
+
+	if (!configState.baseUrl || !configState.modelId) {
+		showToast('⚠ Configure your API settings first', true);
+		uiState.activePage = 'config';
+		return;
+	}
+
+	addMessage('user', text.trim());
+	await triggerGeneration();
+};
+
+export const editAndResend = async (id: string, text: string) => {
+	if (chatState.isStreaming) return;
+	deleteFrom(id);
+	await sendMessage(text);
+};
+
+export const regenerate = async (id: string) => {
+	if (chatState.isStreaming) return;
+	deleteFrom(id);
+	await triggerGeneration();
 };
